@@ -4,24 +4,42 @@ riscv-tests
 About
 -----------
 
-This repository hosts unit tests for RISC-V processors.
+This repository hosts unit tests for RISC-V processors; it also hosts unit
+tests for the instructions in the Xpulpimg extension, subset of the Xpulp
+extension.
+
+This infrastructure deals with the behavioral Spike simulations of the
+instructions, useful to verify either the correct behavioral implementation
+of a new instruction in Spike or the goodness of a test case.
+
+The tests can also be used for RTL simulation (outside of the scope of
+`riscv-tests`); the instructions of interest for RTL simulation on the
+MemPool system, powered by the Snitch core (which implements those
+instructions), have to be listed in the file `isa/snitch_isa.mk`.
 
 Building from repository
 -----------------------------
 
-We assume that the RISCV environment variable is set to the RISC-V tools
-install path, and that the riscv-gnu-toolchain package is installed.
+We assume that the riscv-gnu-toolchain package is installed and that current
+directory is `riscv-tests`
 
-    $ git clone https://github.com/riscv/riscv-tests
-    $ cd riscv-tests
-    $ git submodule update --init --recursive
     $ autoconf
-    $ ./configure --prefix=$RISCV/target
+    $ ./configure --with-xlen=32 --prefix=$(pwd)/target
     $ make
     $ make install
 
 The rest of this document describes the format of test programs for the RISC-V
 architecture.
+
+To compile the test, we assume that you have in your `PATH` the directories for
+the binaries of `riscv-gcc`, `riscv-isa-sim` and `dtc`.
+
+    $ cd isa
+    $ make run
+
+If an error is detected in Spike simulation during any of the unit tests, the
+return value of `make run` will correspond to the `testnum` of the failed test
+in the file specified in `stdout`.
 
 Test Virtual Machines
 -------------------------
@@ -30,9 +48,9 @@ To allow maximum reuse of a given test, each test program is constrained to
 only use features of a given *test virtual machine* or TVM. A TVM hides
 differences between alternative implementations by defining:
 
-* The set of registers and instructions that can be used. 
+* The set of registers and instructions that can be used.
 * Which portions of memory can be accessed.
-* The way the test program starts and ends execution. 
+* The way the test program starts and ends execution.
 * The way that test data is input.
 * The way that test results are output.
 
@@ -42,17 +60,27 @@ TVMs only support a single hardware thread.
 TVM Name | Description
 --- | ---
 `rv32ui` | RV32 user-level, integer only
+`rv32ua` | RV32 user-level, atomic
+`rv32uc` | RV32 user-level, compressed
+`rv32ud` | RV32 user-level, double-precision
+`rv32uf` | RV32 user-level, floating-point
+`rv32um` | RV32 user-level, integer mul/div
+`rv32uxpulpimg` | RV32 user-level, Xpulpimg extension
 `rv32si` | RV32 supervisor-level, integer only
+`rv32mi` | RV32 machine-level, integer only
 `rv64ui` | RV64 user-level, integer only
-`rv64uf` | RV64 user-level, integer and floating-point
-`rv64uv` | RV64 user-level, integer, floating-point, and vector
+`rv64ua` | RV64 user-level, atomic
+`rv64uc` | RV64 user-level, compressed
+`rv64ud` | RV64 user-level, double-precision
+`rv64uf` | RV64 user-level, floating-point
+`rv64um` | RV64 user-level, integer mul/div
 `rv64si` | RV64 supervisor-level, integer only
-`rv64sv` | RV64 supervisor-level, integer and vector
+`rv64mi` | RV64 machine-level, integer only
 
 A test program for RISC-V is written within a single assembly language file,
 which is passed through the C preprocessor, and all regular assembly
 directives can be used. An example test program is shown below. Each test
-program should first include the `riscv test.h` header file, which defines the
+program should first include the `riscv_test.h` header file, which defines the
 macros used by the TVM. The header file will have different contents depending
 on the target environment for which the test will be built.  One of the goals
 of the various TVMs is to allow the same test program to be compiled and run

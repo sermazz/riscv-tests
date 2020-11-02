@@ -2,7 +2,7 @@
 # Makefile for riscv-tests/isa
 #-----------------------------------------------------------------------
 
-XLEN ?= 64
+XLEN ?= 32
 
 src_dir := .
 
@@ -24,6 +24,7 @@ include $(src_dir)/rv32uf/Makefrag
 include $(src_dir)/rv32ud/Makefrag
 include $(src_dir)/rv32si/Makefrag
 include $(src_dir)/rv32mi/Makefrag
+include $(src_dir)/rv32uxpulpimg/Makefrag
 
 default: all
 
@@ -31,11 +32,16 @@ default: all
 # Build rules
 #--------------------------------------------------------------------
 
-RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
+MEMPOOL_DIR       := $(shell git rev-parse --show-toplevel 2>/dev/null || echo $$MEMPOOL_DIR)
+INSTALL_DIR       ?= $(MEMPOOL_DIR)/install
+GCC_INSTALL_DIR   ?= $(INSTALL_DIR)/riscv-gcc
+SPIKE_INSTALL_DIR ?= $(INSTALL_DIR)/riscv-isa-sim
+
+RISCV_PREFIX ?= $(GCC_INSTALL_DIR)/bin/riscv$(XLEN)-unknown-elf-
 RISCV_GCC ?= $(RISCV_PREFIX)gcc
 RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
-RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
-RISCV_SIM ?= spike
+RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassembler-option="march=rv32gXpulpimg" --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
+RISCV_SIM ?= $(SPIKE_INSTALL_DIR)/bin/spike
 
 vpath %.S $(src_dir)
 
@@ -79,6 +85,7 @@ $(eval $(call compile_template,rv32uf,-march=rv32g -mabi=ilp32))
 $(eval $(call compile_template,rv32ud,-march=rv32g -mabi=ilp32))
 $(eval $(call compile_template,rv32si,-march=rv32g -mabi=ilp32))
 $(eval $(call compile_template,rv32mi,-march=rv32g -mabi=ilp32))
+$(eval $(call compile_template,rv32uxpulpimg,-march=rv32gXpulpimg -mabi=ilp32))
 ifeq ($(XLEN),64)
 $(eval $(call compile_template,rv64ui,-march=rv64g -mabi=lp64))
 $(eval $(call compile_template,rv64uc,-march=rv64g -mabi=lp64))
